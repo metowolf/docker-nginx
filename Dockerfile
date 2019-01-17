@@ -96,12 +96,18 @@ RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
 	&& git clone https://github.com/cloudflare/zlib.git --depth 1 \
 	&& (cd zlib; make -f Makefile.in distclean) \
 	\
+	# Sticky
+	&& mkdir nginx-sticky-module-ng \
+	&& curl -fSL https://bitbucket.org/nginx-goodies/nginx-sticky-module-ng/get/master.tar.gz -o nginx-sticky-module-ng.tar.gz \
+	&& tar -zxC nginx-sticky-module-ng -f nginx-sticky-module-ng.tar.gz --strip 1 \
+	\
 	# headers-more-nginx
 	&& git clone https://github.com/openresty/headers-more-nginx-module.git --depth 1 \
 	\
 	&& CONFIG="$CONFIG \
 		 --with-zlib=/usr/src/nginx-${NGINX_VERSION}/zlib \
 		 --add-dynamic-module=/usr/src/nginx-${NGINX_VERSION}/ngx_brotli \
+		 --add-dynamic-module=/usr/src/nginx-${NGINX_VERSION}/nginx-sticky-module-ng \
 		 --add-dynamic-module=/usr/src/nginx-${NGINX_VERSION}/headers-more-nginx-module \
 	" \
 	&& ./configure $CONFIG \
