@@ -142,7 +142,7 @@ RUN apk add --no-cache \
 		tzdata \
 		logrotate \
 	&& sed -i -e 's:/var/log/messages {}:# /var/log/messages {}:' /etc/logrotate.conf \
-	&& echo '0 0 0 0 0 /usr/sbin/logrotate /etc/logrotate.conf -f' > /var/spool/cron/crontabs/root \
+	&& echo '0 0 * * * /usr/sbin/logrotate /etc/logrotate.conf -f' > /var/spool/cron/crontabs/root \
 	&& addgroup -S nginx \
 	&& adduser -D -S -h /var/cache/nginx -s /sbin/nologin -G nginx nginx \
 	&& mkdir -p /var/log/nginx \
