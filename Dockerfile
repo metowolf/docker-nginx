@@ -1,4 +1,4 @@
-FROM alpine:edge as builder
+FROM alpine:3.9 as builder
 
 LABEL maintainer="metowolf <i@i-meto.com>"
 
@@ -52,7 +52,7 @@ RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
 	" \
 	&& addgroup -S nginx \
 	&& adduser -D -S -h /var/cache/nginx -s /sbin/nologin -G nginx nginx \
-	&& apk add --no-cache --repository "http://dl-cdn.alpinelinux.org/alpine/edge/testing/" \
+	&& apk add --no-cache \
 		gcc \
 		libc-dev \
 		make \
@@ -124,7 +124,7 @@ RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
 	&& nginx -V
 
 
-FROM alpine:edge
+FROM alpine:3.9
 
 COPY --from=builder /etc/nginx /etc/nginx
 COPY --from=builder /usr/sbin/nginx /usr/sbin/nginx
@@ -142,7 +142,7 @@ RUN apk add --no-cache \
 		tzdata \
 		logrotate \
 	&& sed -i -e 's:/var/log/messages {}:# /var/log/messages {}:' /etc/logrotate.conf \
-	&& echo '0 0 * * * /usr/sbin/logrotate /etc/logrotate.conf -f' > /var/spool/cron/crontabs/root \
+	&& echo '1 0 * * * /usr/sbin/logrotate /etc/logrotate.conf -f' > /var/spool/cron/crontabs/root \
 	&& addgroup -S nginx \
 	&& adduser -D -S -h /var/cache/nginx -s /sbin/nologin -G nginx nginx \
 	&& mkdir -p /var/log/nginx \
