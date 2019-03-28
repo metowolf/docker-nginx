@@ -3,6 +3,7 @@ FROM alpine:3.9 as builder
 LABEL maintainer="metowolf <i@i-meto.com>"
 
 ARG NGINX_VERSION=1.15.10
+ARG OPENSSL_VERSION=1.1.1b
 
 RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
 	&& CONFIG="\
@@ -96,6 +97,10 @@ RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
 	&& git clone https://github.com/cloudflare/zlib.git --depth 1 \
 	&& (cd zlib; make -f Makefile.in distclean) \
 	\
+	# OpenSSL
+	&& curl -fSL https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz -o openssl-${OPENSSL_VERSION}.tar.gz \
+	&& tar -xzf openssl-${OPENSSL_VERSION}.tar.gz \
+	\
 	# Sticky
 	&& mkdir nginx-sticky-module-ng \
 	&& curl -fSL https://bitbucket.org/nginx-goodies/nginx-sticky-module-ng/get/master.tar.gz -o nginx-sticky-module-ng.tar.gz \
@@ -109,6 +114,8 @@ RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
 		 --add-dynamic-module=/usr/src/nginx-${NGINX_VERSION}/ngx_brotli \
 		 --add-dynamic-module=/usr/src/nginx-${NGINX_VERSION}/nginx-sticky-module-ng \
 		 --add-dynamic-module=/usr/src/nginx-${NGINX_VERSION}/headers-more-nginx-module \
+		 --with-openssl-opt='-O3' \
+ 	 	 --with-openssl=/usr/src/nginx-${NGINX_VERSION}/openssl-${OPENSSL_VERSION} \
 	" \
 	&& ./configure $CONFIG \
 	&& make -j$(getconf _NPROCESSORS_ONLN) \
