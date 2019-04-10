@@ -5,13 +5,14 @@ language: bash
 services:
   - docker
 
+env:
+  global:
+  - IMAGE_NAME=metowolf/nginx
+  - VERSION_KEYWORD="ARG NGINX_VERSION="
+
+before_install:
+  - docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
+
 script:
   - chmod +x build.sh
   - ./build.sh
-
-notifications:
-  email:
-    recipients:
-      - i@i-meto.com
-    on_success: always
-    on_failure: always
