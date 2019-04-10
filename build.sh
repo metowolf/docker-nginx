@@ -2,7 +2,7 @@
 
 set -e
 
-VERSION=`cat Dockerfile | grep ${VERSION_KEYWORD} | awk -F '=' '{print $2}'`
+VERSION=`cat Dockerfile | grep "${VERSION_KEYWORD}" | awk -F '=' '{print $2}'`
 MAJOR=`echo ${VERSION} | cut -d. -f1`
 MINOR=`echo ${VERSION} | cut -d. -f2`
 
