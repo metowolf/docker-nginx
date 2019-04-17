@@ -62,28 +62,19 @@ RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
 		zlib-dev \
 		linux-headers \
 		curl \
-		gnupg1 \
+		gnupg \
 		libxslt-dev \
 		gd-dev \
 		geoip-dev \
 		git \
 		gettext \
 	&& curl -fSL https://nginx.org/download/nginx-$NGINX_VERSION.tar.gz -o nginx.tar.gz \
-	&& curl -fSL https://nginx.org/download/nginx-$NGINX_VERSION.tar.gz.asc  -o nginx.tar.gz.asc \
-	&& export GNUPGHOME="$(mktemp -d)" \
-	&& found=''; \
-	for server in \
-		ha.pool.sks-keyservers.net \
-		hkp://keyserver.ubuntu.com:80 \
-		hkp://p80.pool.sks-keyservers.net:80 \
-		pgp.mit.edu \
-	; do \
-		echo "Fetching GPG key $GPG_KEYS from $server"; \
-		gpg --keyserver "$server" --keyserver-options timeout=10 --recv-keys "$GPG_KEYS" && found=yes && break; \
-	done; \
-	test -z "$found" && echo >&2 "error: failed to fetch GPG key $GPG_KEYS" && exit 1; \
-	gpg --batch --verify nginx.tar.gz.asc nginx.tar.gz \
-	&& rm -rf "$GNUPGHOME" nginx.tar.gz.asc \
+	&& curl -fSL https://nginx.org/download/nginx-$NGINX_VERSION.tar.gz.asc -o nginx.tar.gz.asc \
+	&& export GNUPGHOME="$(mktemp -d)"; \
+	for key in $GPG_KEYS; do \
+    gpg --batch --keyserver ha.pool.sks-keyservers.net --recv-keys "$key"; \
+  done \
+  && gpg --batch --verify nginx.tar.gz.asc nginx.tar.gz \
 	&& mkdir -p /usr/src \
 	&& tar -zxC /usr/src -f nginx.tar.gz \
 	&& rm nginx.tar.gz \
@@ -114,7 +105,6 @@ RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
 		 --add-dynamic-module=/usr/src/nginx-${NGINX_VERSION}/ngx_brotli \
 		 --add-dynamic-module=/usr/src/nginx-${NGINX_VERSION}/nginx-sticky-module-ng \
 		 --add-dynamic-module=/usr/src/nginx-${NGINX_VERSION}/headers-more-nginx-module \
-		 --with-openssl-opt='-O3' \
  	 	 --with-openssl=/usr/src/nginx-${NGINX_VERSION}/openssl-${OPENSSL_VERSION} \
 	" \
 	&& ./configure $CONFIG \
@@ -129,6 +119,10 @@ RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
 	&& strip /usr/sbin/nginx* \
 	&& strip /usr/lib/nginx/modules/*.so \
 	&& nginx -V
+
+COPY config/nginx.conf /etc/nginx/nginx.conf
+COPY config/nginx.vh.default.conf /etc/nginx/conf.d/default.conf
+COPY config/logrotate /etc/nginx/logrotate
 
 
 FROM alpine:3.9
@@ -154,17 +148,14 @@ RUN apk add --no-cache \
 	&& adduser -D -S -h /var/cache/nginx -s /sbin/nologin -G nginx nginx \
 	&& mkdir -p /var/log/nginx \
 	&& ln -sf /dev/stdout /var/log/nginx/access.log \
-	&& ln -sf /dev/stderr /var/log/nginx/error.log
+	&& ln -sf /dev/stderr /var/log/nginx/error.log \
+	&& mv /etc/nginx/logrotate /etc/logrotate.d/nginx \
+	&& chmod 755 /etc/logrotate.d/nginx
 
-COPY config/nginx.conf /etc/nginx/nginx.conf
-COPY config/nginx.vh.default.conf /etc/nginx/conf.d/default.conf
-COPY config/logrotate /etc/logrotate.d/nginx
 COPY docker-entrypoint.sh /usr/local/bin/
-
 ENTRYPOINT ["docker-entrypoint.sh"]
 
 EXPOSE 80 443
-
 STOPSIGNAL SIGTERM
 
 CMD ["nginx", "-g", "daemon off;"]
