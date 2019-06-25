@@ -1,8 +1,8 @@
-FROM alpine:3.9 as builder
+FROM alpine:3.10 as builder
 
 LABEL maintainer="metowolf <i@i-meto.com>"
 
-ARG NGINX_VERSION=1.17.0
+ARG NGINX_VERSION=1.17.1
 ARG OPENSSL_VERSION=1.1.1c
 
 RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
@@ -125,7 +125,7 @@ COPY config/nginx.vh.default.conf /etc/nginx/conf.d/default.conf
 COPY config/logrotate /etc/nginx/logrotate
 
 
-FROM alpine:3.9
+FROM alpine:3.10
 
 COPY --from=builder /etc/nginx /etc/nginx
 COPY --from=builder /usr/sbin/nginx /usr/sbin/nginx
