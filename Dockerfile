@@ -1,8 +1,8 @@
-FROM alpine:3.10 as builder
+FROM alpine:edge as builder
 
 LABEL maintainer="metowolf <i@i-meto.com>"
 
-ARG NGINX_VERSION=1.17.1
+ARG NGINX_VERSION=1.17.2
 ARG OPENSSL_VERSION=1.1.1c
 
 RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
