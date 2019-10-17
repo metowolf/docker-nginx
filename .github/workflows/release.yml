@@ -1,0 +1,23 @@
+name: Docker Build
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v1
+    - uses: jerray/publish-docker-action@master
+      with:
+        username: metowolf
+        password: ${{ secrets.DOCKER_TOKEN }}
+        repository: metowolf/nginx
+        auto_tag: true
+    - uses: jerray/publish-docker-action@master
+      with:
+        username: metowolf
+        password: ${{ secrets.DOCKER_TOKEN }}
+        repository: metowolf/nginx
+        tags: latest
