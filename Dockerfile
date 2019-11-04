@@ -3,10 +3,74 @@ FROM alpine:3.10 as builder
 LABEL maintainer="metowolf <i@i-meto.com>"
 
 ARG NGINX_VERSION=1.17.5
-ARG OPENSSL_VERSION=1.1.1d
+# ARG OPENSSL_VERSION=1.1.1d
 
-RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
-    && CONFIG="\
+RUN set -ex \
+    && echo 'http://dl-cdn.alpinelinux.org/alpine/edge/main'>> /etc/apk/repositories \
+    && echo 'http://dl-cdn.alpinelinux.org/alpine/edge/community' >> /etc/apk/repositories \
+    && apk upgrade \
+    && apk add --no-cache \
+        build-base \
+        openssl-dev \
+        pcre-dev \
+        zlib-dev \
+        linux-headers \
+        curl \
+        gnupg \
+        libxslt-dev \
+        gd-dev \
+        geoip-dev \
+        git \
+        gettext \
+        patch \
+        cmake \
+        rust \
+        cargo \
+        go \
+    && curl -fSL https://nginx.org/download/nginx-$NGINX_VERSION.tar.gz -o nginx.tar.gz \
+    && curl -fSL https://nginx.org/download/nginx-$NGINX_VERSION.tar.gz.asc -o nginx.tar.gz.asc \
+    && export GNUPGHOME="$(mktemp -d)"; \
+        for key in \
+            B0F4253373F8F6F510D42178520A9993A1C052F8 \
+        ; do \
+            gpg --batch --keyserver hkp://keyserver.ubuntu.com:80 --keyserver-options timeout=10 --recv-keys "$key" || \
+            gpg --batch --keyserver hkp://ipv4.pool.sks-keyservers.net --keyserver-options timeout=10 --recv-keys "$key" || \
+            gpg --batch --keyserver hkp://pgp.mit.edu:80 --keyserver-options timeout=10 --recv-keys "$key" ; \
+        done \
+    && gpg --batch --verify nginx.tar.gz.asc nginx.tar.gz \
+    && mkdir -p /usr/src \
+    && tar -zxC /usr/src -f nginx.tar.gz \
+    && rm nginx.tar.gz
+
+RUN set -ex \
+    && cd /usr/src/nginx-$NGINX_VERSION \
+    \
+    # Brotli
+    && git clone https://github.com/eustas/ngx_brotli.git --depth=1 \
+    && (cd ngx_brotli; git submodule update --init) \
+    \
+    # cf-zlib
+    && git clone https://github.com/cloudflare/zlib.git --depth 1 \
+    && (cd zlib; make -f Makefile.in distclean) \
+    \
+    # Quiche
+    && git clone --recursive https://github.com/cloudflare/quiche \
+    && patch -p01 --ignore-whitespace < ./quiche/extras/nginx/nginx-1.16.patch \
+    \
+    # OpenSSL
+    # && curl -fSL https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz -o openssl-${OPENSSL_VERSION}.tar.gz \
+    # && tar -xzf openssl-${OPENSSL_VERSION}.tar.gz \
+    \
+    # Sticky
+    && mkdir nginx-sticky-module-ng \
+    && curl -fSL https://bitbucket.org/nginx-goodies/nginx-sticky-module-ng/get/master.tar.gz -o nginx-sticky-module-ng.tar.gz \
+    && tar -zxC nginx-sticky-module-ng -f nginx-sticky-module-ng.tar.gz --strip 1 \
+    \
+    # headers-more-nginx
+    && git clone https://github.com/openresty/headers-more-nginx-module.git --depth 1
+
+RUN cd /usr/src/nginx-$NGINX_VERSION \
+    && ./configure \
         --prefix=/etc/nginx \
         --sbin-path=/usr/sbin/nginx \
         --modules-path=/usr/lib/nginx/modules \
@@ -50,65 +114,13 @@ RUN GPG_KEYS=B0F4253373F8F6F510D42178520A9993A1C052F8 \
         --with-compat \
         --with-file-aio \
         --with-http_v2_module \
-    " \
-    && addgroup -S nginx \
-    && adduser -D -S -h /var/cache/nginx -s /sbin/nologin -G nginx nginx \
-    && apk upgrade \
-    && apk add --no-cache \
-        gcc \
-        libc-dev \
-        make \
-        openssl-dev \
-        pcre-dev \
-        zlib-dev \
-        linux-headers \
-        curl \
-        gnupg \
-        libxslt-dev \
-        gd-dev \
-        geoip-dev \
-        git \
-        gettext \
-    && curl -fSL https://nginx.org/download/nginx-$NGINX_VERSION.tar.gz -o nginx.tar.gz \
-    && curl -fSL https://nginx.org/download/nginx-$NGINX_VERSION.tar.gz.asc -o nginx.tar.gz.asc \
-    && export GNUPGHOME="$(mktemp -d)"; \
-        for key in $GPG_KEYS; do \
-            gpg --batch --keyserver ha.pool.sks-keyservers.net --recv-keys "$key"; \
-        done \
-    && gpg --batch --verify nginx.tar.gz.asc nginx.tar.gz \
-    && mkdir -p /usr/src \
-    && tar -zxC /usr/src -f nginx.tar.gz \
-    && rm nginx.tar.gz \
-    && cd /usr/src/nginx-$NGINX_VERSION \
-    \
-    # Brotli
-    && git clone https://github.com/eustas/ngx_brotli.git --depth=1 \
-    && (cd ngx_brotli; git submodule update --init) \
-    \
-    # cf-zlib
-    && git clone https://github.com/cloudflare/zlib.git --depth 1 \
-    && (cd zlib; make -f Makefile.in distclean) \
-    \
-    # OpenSSL
-    && curl -fSL https://www.openssl.org/source/openssl-${OPENSSL_VERSION}.tar.gz -o openssl-${OPENSSL_VERSION}.tar.gz \
-    && tar -xzf openssl-${OPENSSL_VERSION}.tar.gz \
-    \
-    # Sticky
-    && mkdir nginx-sticky-module-ng \
-    && curl -fSL https://bitbucket.org/nginx-goodies/nginx-sticky-module-ng/get/master.tar.gz -o nginx-sticky-module-ng.tar.gz \
-    && tar -zxC nginx-sticky-module-ng -f nginx-sticky-module-ng.tar.gz --strip 1 \
-    \
-    # headers-more-nginx
-    && git clone https://github.com/openresty/headers-more-nginx-module.git --depth 1 \
-    \
-    && CONFIG="$CONFIG \
+        --with-http_v3_module \
         --with-zlib=/usr/src/nginx-${NGINX_VERSION}/zlib \
         --add-dynamic-module=/usr/src/nginx-${NGINX_VERSION}/ngx_brotli \
         --add-dynamic-module=/usr/src/nginx-${NGINX_VERSION}/nginx-sticky-module-ng \
         --add-dynamic-module=/usr/src/nginx-${NGINX_VERSION}/headers-more-nginx-module \
-        --with-openssl=/usr/src/nginx-${NGINX_VERSION}/openssl-${OPENSSL_VERSION} \
-    " \
-    && ./configure $CONFIG \
+        --with-openssl=/usr/src/nginx-${NGINX_VERSION}/quiche/deps/boringssl \
+        --with-quiche=/usr/src/nginx-${NGINX_VERSION}/quiche \
     && make -j$(getconf _NPROCESSORS_ONLN) \
     && make install \
     && rm -rf /etc/nginx/html/ \
@@ -128,6 +140,8 @@ COPY config/logrotate /etc/nginx/logrotate
 
 FROM alpine:3.10
 
+LABEL maintainer="metowolf <i@i-meto.com>"
+
 COPY --from=builder /etc/nginx /etc/nginx
 COPY --from=builder /usr/sbin/nginx /usr/sbin/nginx
 COPY --from=builder /usr/bin/envsubst /usr/local/bin/envsubst
@@ -135,12 +149,8 @@ COPY --from=builder /usr/lib/nginx/ /usr/lib/nginx/
 COPY --from=builder /usr/share/nginx /usr/share/nginx
 
 RUN apk add --no-cache \
-        musl \
         pcre \
-        libssl1.1 \
-        libcrypto1.1 \
-        zlib \
-        libintl \
+        libgcc \
         tzdata \
         logrotate \
     && sed -i -e 's:/var/log/messages {}:# /var/log/messages {}:' /etc/logrotate.conf \
