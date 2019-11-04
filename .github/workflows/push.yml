@@ -1,10 +1,6 @@
 name: Docker Build
 
-on:
-  push:
-    paths:
-    - 'Dockerfile'
-    - '**.sh'
+on: [push]
 
 jobs:
   build:
@@ -16,4 +12,4 @@ jobs:
         username: metowolf
         password: ${{ secrets.DOCKER_TOKEN }}
         repository: metowolf/nginx
-        tags: edge
+        auto_tag: true
