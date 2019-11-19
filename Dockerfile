@@ -1,4 +1,4 @@
-FROM alpine:3.10 as builder
+FROM rust:1.39.0-alpine3.10 as builder
 
 LABEL maintainer="metowolf <i@i-meto.com>"
 
@@ -6,8 +6,6 @@ ARG NGINX_VERSION=1.17.6
 # ARG OPENSSL_VERSION=1.1.1d
 
 RUN set -ex \
-    && echo 'http://dl-cdn.alpinelinux.org/alpine/edge/main'>> /etc/apk/repositories \
-    && echo 'http://dl-cdn.alpinelinux.org/alpine/edge/community' >> /etc/apk/repositories \
     && apk upgrade \
     && apk add --no-cache \
         build-base \
@@ -24,8 +22,6 @@ RUN set -ex \
         gettext \
         patch \
         cmake \
-        rust \
-        cargo \
         go \
     && curl -fSL https://nginx.org/download/nginx-$NGINX_VERSION.tar.gz -o nginx.tar.gz \
     && curl -fSL https://nginx.org/download/nginx-$NGINX_VERSION.tar.gz.asc -o nginx.tar.gz.asc \
@@ -54,7 +50,8 @@ RUN set -ex \
     && (cd zlib; make -f Makefile.in distclean) \
     \
     # Quiche
-    && git clone --recursive https://github.com/cloudflare/quiche \
+    && git clone https://github.com/cloudflare/quiche --depth=1 \
+    && (cd quiche; git submodule update --init) \
     && patch -p01 --ignore-whitespace < ./quiche/extras/nginx/nginx-1.16.patch \
     \
     # OpenSSL
