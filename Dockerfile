@@ -2,7 +2,7 @@ FROM alpine:3.10 as builder
 
 LABEL maintainer="metowolf <i@i-meto.com>"
 
-ARG NGINX_VERSION=1.17.5
+ARG NGINX_VERSION=1.17.6
 # ARG OPENSSL_VERSION=1.1.1d
 
 RUN set -ex \
