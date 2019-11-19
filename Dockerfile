@@ -141,7 +141,6 @@ LABEL maintainer="metowolf <i@i-meto.com>"
 COPY --from=builder /etc/nginx /etc/nginx
 COPY --from=builder /usr/sbin/nginx /usr/sbin/nginx
 COPY --from=builder /usr/bin/envsubst /usr/local/bin/envsubst
-COPY --from=builder /usr/lib/nginx/ /usr/lib/nginx/
 COPY --from=builder /usr/share/nginx /usr/share/nginx
 
 RUN apk add --no-cache \
