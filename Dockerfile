@@ -127,7 +127,6 @@ RUN cd /usr/src/nginx-$NGINX_VERSION \
     && install -m644 html/50x.html /usr/share/nginx/html/ \
     && ln -s ../../usr/lib/nginx/modules /etc/nginx/modules \
     && strip /usr/sbin/nginx* \
-    && strip /usr/lib/nginx/modules/*.so \
     && nginx -V
 
 COPY config/nginx.conf /etc/nginx/nginx.conf
