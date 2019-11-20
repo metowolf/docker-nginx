@@ -143,9 +143,14 @@ COPY --from=builder /usr/sbin/nginx /usr/sbin/nginx
 COPY --from=builder /usr/bin/envsubst /usr/local/bin/envsubst
 COPY --from=builder /usr/share/nginx /usr/share/nginx
 
-RUN apk add --no-cache \
-        pcre \
-        libgcc \
+RUN set -ex \
+    && runDeps="$( \
+    scanelf --needed --nobanner --format '%n#p' --recursive /usr/ \
+        | tr ',' '\n' \
+        | sort -u \
+        | awk 'system("[ -e /usr/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
+    )" \
+    && apk --no-cache add $runDeps \
         tzdata \
         logrotate \
     && sed -i -e 's:/var/log/messages {}:# /var/log/messages {}:' /etc/logrotate.conf \
