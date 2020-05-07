@@ -1,8 +1,8 @@
-FROM rust:1.40-alpine as builder
+FROM rust:1.43-alpine as builder
 
 LABEL maintainer="metowolf <i@i-meto.com>"
 
-ARG NGINX_VERSION=1.17.8
+ARG NGINX_VERSION=1.17.10
 # ARG OPENSSL_VERSION=1.1.1d
 
 RUN set -ex \
