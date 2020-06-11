@@ -2,7 +2,7 @@ FROM rust:1.43-alpine as builder
 
 LABEL maintainer="metowolf <i@i-meto.com>"
 
-ARG NGINX_VERSION=1.17.10
+ARG NGINX_VERSION=1.19.0
 # ARG OPENSSL_VERSION=1.1.1d
 
 RUN set -ex \
@@ -134,7 +134,7 @@ COPY config/nginx.vh.default.conf /etc/nginx/conf.d/default.conf
 COPY config/logrotate /etc/nginx/logrotate
 
 
-FROM alpine:3.11
+FROM alpine:3.12
 
 LABEL maintainer="metowolf <i@i-meto.com>"
 
